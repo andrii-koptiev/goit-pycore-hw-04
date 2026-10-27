@@ -5,38 +5,31 @@ from hw04.exceptions import CorruptLineError, EmptyFileError
 from hw04.task1_salary import parse_salary_from_line, total_salary
 
 
-def write_file(tmp_path, content: str, name: str = "staff.txt") -> str:
-    """Create a UTF-8 file in tmp_path and return its path as a string."""
-    file = tmp_path / name
-    file.write_text(content, encoding="utf-8")
-    return str(file)
-
-
 # --- total_salary: happy paths -------------------------------------------
 
 
-def test_total_and_average(tmp_path):
-    path = write_file(tmp_path, "Alex,3000\nNikita,2000\nSitarama,1000\n")
+def test_total_and_average(write_file):
+    path = write_file("Alex,3000\nNikita,2000\nSitarama,1000\n")
     assert total_salary(path) == (6000, 2000)
 
 
-def test_single_employee(tmp_path):
-    path = write_file(tmp_path, "Alex,1500")
+def test_single_employee(write_file):
+    path = write_file("Alex,1500")
     assert total_salary(path) == (1500, 1500)
 
 
-def test_no_trailing_newline(tmp_path):
-    path = write_file(tmp_path, "Alex,100\nNikita,300")
+def test_no_trailing_newline(write_file):
+    path = write_file("Alex,100\nNikita,300")
     assert total_salary(path) == (400, 200)
 
 
-def test_float_salaries(tmp_path):
-    path = write_file(tmp_path, "Alex,1000.50\nNikita,2000.50\n")
+def test_float_salaries(write_file):
+    path = write_file("Alex,1000.50\nNikita,2000.50\n")
     assert total_salary(path) == pytest.approx((3001, 1500.5))
 
 
-def test_name_with_spaces(tmp_path):
-    path = write_file(tmp_path, "Alex Korp,3000\nSitarama Raju,1000\n")
+def test_name_with_spaces(write_file):
+    path = write_file("Alex Korp,3000\nSitarama Raju,1000\n")
     assert total_salary(path) == (4000, 2000)
 
 
@@ -46,8 +39,8 @@ def test_windows_line_endings(tmp_path):
     assert total_salary(str(file)) == (4000, 2000)
 
 
-def test_non_ascii_names(tmp_path):
-    path = write_file(tmp_path, "Андрій,3000\nÉmilie,1000\n")
+def test_non_ascii_names(write_file):
+    path = write_file("Андрій,3000\nÉmilie,1000\n")
     assert total_salary(path) == (4000, 2000)
 
 
@@ -72,9 +65,9 @@ def test_non_utf8_content(tmp_path):
 
 
 @pytest.mark.parametrize("content", ["", "\n", "   \n"])
-def test_empty_file_raises_empty_file_error(tmp_path, content):
+def test_empty_file_raises_empty_file_error(content, write_file):
     # An empty file must not leak ZeroDivisionError.
-    path = write_file(tmp_path, content)
+    path = write_file(content)
     with pytest.raises(EmptyFileError):
         total_salary(path)
 
@@ -92,20 +85,20 @@ def test_empty_file_raises_empty_file_error(tmp_path, content):
         ("Alex,3000\nNikita,two\nSitarama,1000\n", 2),
     ],
 )
-def test_corrupt_line_reports_line_number(tmp_path, content, bad_line_number):
-    path = write_file(tmp_path, content)
+def test_corrupt_line_reports_line_number(content, bad_line_number, write_file):
+    path = write_file(content)
     with pytest.raises(CorruptLineError) as exc_info:
         total_salary(path)
     assert exc_info.value.line_number == bad_line_number
 
 
-def test_blank_lines_are_skipped(tmp_path):
-    path = write_file(tmp_path, "Alex,3000\n\nNikita,1000\n")
+def test_blank_lines_are_skipped(write_file):
+    path = write_file("Alex,3000\n\nNikita,1000\n")
     assert total_salary(path) == (4000, 2000)
 
 
-def test_line_number_counts_blank_lines(tmp_path):
-    path = write_file(tmp_path, "Alex,3000\n\nNikita;2000\n")
+def test_line_number_counts_blank_lines(write_file):
+    path = write_file("Alex,3000\n\nNikita;2000\n")
     with pytest.raises(CorruptLineError) as exc_info:
         total_salary(path)
     assert exc_info.value.line_number == 3
@@ -126,13 +119,13 @@ def test_line_number_counts_blank_lines(tmp_path):
     ],
 )
 def test_parse_valid_line(line, expected):
-    assert parse_salary_from_line(line, 1) == expected
+    assert parse_salary_from_line(1, line) == expected
 
 
 @pytest.mark.parametrize("line", ["", "Alex", "Alex 3000", "Alex,", "Alex,abc"])
 def test_parse_invalid_line(line):
     with pytest.raises(CorruptLineError) as exc_info:
-        parse_salary_from_line(line, 7)
+        parse_salary_from_line(7, line)
     assert exc_info.value.line_number == 7
 
 
@@ -145,13 +138,9 @@ def test_corrupt_line_error_message():
 # --- run(): console behaviour --------------------------------------------
 
 
-def fake_input(monkeypatch, answer: str) -> None:
-    monkeypatch.setattr("builtins.input", lambda _prompt="": answer)
-
-
-def test_run_prints_result(tmp_path, monkeypatch, capsys):
-    path = write_file(tmp_path, "Alex,3000\nNikita,1000\n")
-    fake_input(monkeypatch, path)
+def test_run_prints_result(capsys, write_file, fake_input):
+    path = write_file("Alex,3000\nNikita,1000\n")
+    fake_input(path)
 
     task1_salary.run()
 
@@ -160,8 +149,8 @@ def test_run_prints_result(tmp_path, monkeypatch, capsys):
     assert "average salary: $2000.00" in out
 
 
-def test_run_missing_file_prints_error(tmp_path, monkeypatch, capsys):
-    fake_input(monkeypatch, str(tmp_path / "nope.txt"))
+def test_run_missing_file_prints_error(tmp_path, capsys, fake_input):
+    fake_input(str(tmp_path / "nope.txt"))
 
     task1_salary.run()
 
@@ -169,8 +158,8 @@ def test_run_missing_file_prints_error(tmp_path, monkeypatch, capsys):
     assert "File not found" in out
 
 
-def test_run_corrupt_file_prints_error(tmp_path, monkeypatch, capsys):
-    fake_input(monkeypatch, write_file(tmp_path, "Alex,abc\n"))
+def test_run_corrupt_file_prints_error(capsys, write_file, fake_input):
+    fake_input(write_file("Alex,abc\n"))
 
     task1_salary.run()
 
@@ -179,19 +168,19 @@ def test_run_corrupt_file_prints_error(tmp_path, monkeypatch, capsys):
     assert "line 1" in out
 
 
-def test_run_empty_file_prints_error(tmp_path, monkeypatch, capsys):
-    fake_input(monkeypatch, write_file(tmp_path, ""))
+def test_run_empty_file_prints_error(capsys, write_file, fake_input):
+    fake_input(write_file(""))
 
     task1_salary.run()
 
     out = capsys.readouterr().out
-    assert "Cannot calculate" in out
+    assert "File is empty" in out
 
 
-def test_run_empty_answer_uses_default_path(tmp_path, monkeypatch, capsys):
-    default = write_file(tmp_path, "Alex,500\n")
+def test_run_empty_answer_uses_default_path(monkeypatch, capsys, write_file, fake_input):
+    default = write_file("Alex,500\n")
     monkeypatch.setattr(task1_salary, "DEFAULT_SALARY_PATH", default)
-    fake_input(monkeypatch, "")
+    fake_input("")
 
     task1_salary.run()
 

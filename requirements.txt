@@ -1,3 +1,8 @@
 colorama==0.4.6
--e git+ssh://git@github.com/andrii-koptiev/goit-pycore-hw-04.git@b9c3d3a9d0f9ccfa00785fb1ee25d5f1ef73c0a5#egg=hw04
+-e git+ssh://git@github.com/andrii-koptiev/goit-pycore-hw-04.git@6080264c7089519b446b02ab678f4a57dccdd320#egg=hw04
+iniconfig==2.3.1
+packaging==26.3
+pluggy==1.7.0
+Pygments==2.21.0
+pytest==9.1.1
 types-colorama==0.4.15.20260508

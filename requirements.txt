@@ -1,0 +1,3 @@
+colorama==0.4.6
+-e git+ssh://git@github.com/andrii-koptiev/goit-pycore-hw-04.git@b9c3d3a9d0f9ccfa00785fb1ee25d5f1ef73c0a5#egg=hw04
+types-colorama==0.4.15.20260508

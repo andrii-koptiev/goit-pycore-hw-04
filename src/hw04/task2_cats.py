@@ -71,7 +71,7 @@ def get_cats_info(path: str) -> list[CatInfo]:
 
 
 def run() -> None:
-    path = ask_path("cats info", DEFAULT_CATS_PATH)
+    path = ask_path("cats file", DEFAULT_CATS_PATH)
 
     try:
         cats = get_cats_info(path)

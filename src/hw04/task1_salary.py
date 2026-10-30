@@ -44,7 +44,7 @@ def total_salary(path: str) -> tuple[float, float]:
 
 
 def run() -> None:
-    path = ask_path("salary", DEFAULT_SALARY_PATH)
+    path = ask_path("salary file", DEFAULT_SALARY_PATH)
 
     try:
         total, average = total_salary(path)

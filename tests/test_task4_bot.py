@@ -72,14 +72,15 @@ def test_parse_input_keeps_arg_case():
 def test_add_contact():
     contacts = {}
     assert add_contact(["Bob", "123"], contacts) == "Contact added."
-    assert contacts == {"Bob": "123"}
+    assert contacts == {"bob": ("Bob", "123")}  # key folded, original name kept
 
 
-def test_add_existing_contact_does_not_overwrite():
-    contacts = {"Bob": "123"}
+@pytest.mark.parametrize("name", ["Bob", "bob", "BOB", "bOb"])
+def test_add_existing_contact_does_not_overwrite(name):
+    contacts = {"bob": ("Bob", "123")}
     with pytest.raises(NameExistsError, match="already exists"):
-        add_contact(["Bob", "999"], contacts)
-    assert contacts == {"Bob": "123"}
+        add_contact([name, "999"], contacts)
+    assert contacts == {"bob": ("Bob", "123")}
 
 
 @pytest.mark.parametrize("args", [[], ["Bob"], ["Bob", "123", "456"]])
@@ -93,55 +94,69 @@ def test_add_contact_wrong_arg_count(args):
 # --- change_contact ------------------------------------------------------
 
 
-def test_change_contact():
-    contacts = {"Bob": "123"}
-    assert change_contact(["Bob", "999"], contacts) == "Contact updated."
-    assert contacts == {"Bob": "999"}
+@pytest.mark.parametrize("name", ["Bob", "bob", "BOB"])
+def test_change_contact(name):
+    contacts = {"bob": ("Bob", "123")}
+    assert change_contact([name, "999"], contacts) == "Contact updated."
+    assert contacts == {"bob": ("Bob", "999")}  # original spelling is kept
 
 
 def test_change_unknown_contact():
-    contacts = {"Bob": "123"}
+    contacts = {"bob": ("Bob", "123")}
     with pytest.raises(NotFoundError, match="not found"):
         change_contact(["Alice", "999"], contacts)
-    assert contacts == {"Bob": "123"}
+    assert contacts == {"bob": ("Bob", "123")}
 
 
 @pytest.mark.parametrize("args", [[], ["Bob"], ["Bob", "1", "2"]])
 def test_change_contact_wrong_arg_count(args):
-    contacts = {"Bob": "123"}
+    contacts = {"bob": ("Bob", "123")}
     with pytest.raises(WrongArgumentsError, match="name and phone"):
         change_contact(args, contacts)
-    assert contacts == {"Bob": "123"}
+    assert contacts == {"bob": ("Bob", "123")}
 
 
 # --- show_phone ----------------------------------------------------------
 
 
-def test_show_phone():
-    assert show_phone(["Bob"], {"Bob": "123"}) == "123"
+@pytest.mark.parametrize("name", ["Bob", "bob", "BOB"])
+def test_show_phone(name):
+    assert show_phone([name], {"bob": ("Bob", "123")}) == "123"
 
 
 def test_show_phone_unknown_contact():
     with pytest.raises(NotFoundError, match="not found"):
-        show_phone(["Alice"], {"Bob": "123"})
+        show_phone(["Alice"], {"bob": ("Bob", "123")})
 
 
 @pytest.mark.parametrize("args", [[], ["Bob", "extra"]])
 def test_show_phone_wrong_arg_count(args):
     with pytest.raises(WrongArgumentsError, match="a name"):
-        show_phone(args, {"Bob": "123"})
+        show_phone(args, {"bob": ("Bob", "123")})
+
+
+# --- case-insensitive names: add -> change -> phone -> all ----------------
+
+
+def test_names_are_case_insensitive_end_to_end():
+    contacts = {}
+    add_contact(["Bob", "123"], contacts)
+    change_contact(["bOb", "999"], contacts)
+    assert show_phone(["BOB"], contacts) == "999"
+    assert show_all(contacts) == "Bob: 999"  # shown as typed in `add`
+    assert len(contacts) == 1
 
 
 # --- show_all ------------------------------------------------------------
 
 
 def test_show_all_lists_every_contact_in_order():
-    contacts = {"Bob": "123", "Alice": "456"}
+    contacts = {"bob": ("Bob", "123"), "alice": ("Alice", "456")}
     assert show_all(contacts) == "Bob: 123\nAlice: 456"
 
 
 def test_show_all_single_contact_has_no_trailing_newline():
-    assert show_all({"Bob": "123"}) == "Bob: 123"
+    assert show_all({"bob": ("Bob", "123")}) == "Bob: 123"
 
 
 def test_show_all_empty():

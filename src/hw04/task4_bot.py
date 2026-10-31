@@ -1,29 +1,34 @@
 """Task 4: assistant bot.
 
-A console bot that keeps contacts (name -> phone) in a dict.
+A console bot that keeps contacts in a dict.
+
+Storage: the key is the case-folded name, the value is ``(original_name, phone)``.
+So ``Bob``, ``bob`` and ``BOB`` are the same contact, and ``all`` still shows the
+name as it was typed in ``add``. ``change`` keeps that original spelling.
 
 Requirements:
 
 * Handlers take strings or lists and RETURN strings. They never print.
   All ``print`` and ``input`` happen only in ``main()``.
 * ``parse_input(user_input)`` returns ``(command, args)``:
-  - the command is lower-cased, the args keep their case
+  - the command is case-folded, the args keep their case
   - extra spaces are ignored (``"  add   Bob   123 "`` -> ``("add", ["Bob", "123"])``)
   - empty or blank input gives ``("", [])`` instead of crashing
 * ``add_contact(args, contacts)``  args = ``[name, phone]``
   - ok                       -> ``"Contact added."``
-  - name already exists      -> ``"Contact already exists."`` (nothing changes)
+  - name already exists (any letter case) -> ``"Contact already exists."`` (nothing changes)
   - wrong number of args     -> ``"Give me name and phone please."``
 * ``change_contact(args, contacts)``  args = ``[name, phone]``
-  - ok                       -> ``"Contact updated."``
-  - unknown name             -> ``"Contact not found."``
+  - ok (name in any letter case) -> ``"Contact updated."``, original name kept
+  - unknown name            -> ``"Contact not found."``
   - wrong number of args     -> ``"Give me name and phone please."``
 * ``show_phone(args, contacts)``  args = ``[name]``
-  - ok                       -> the phone number
-  - unknown name             -> ``"Contact not found."``
+  - ok (name in any letter case) -> the phone number
+  - unknown name            -> ``"Contact not found."``
   - wrong number of args     -> ``"Give me a name please."``
 * ``show_all(contacts)``
-  - one ``"name: phone"`` line per contact, in insertion order, joined by ``"\\n"``
+  - one ``"name: phone"`` line per contact (name as originally typed), in
+    insertion order, joined by ``"\\n"``
   - no contacts              -> ``"No contacts."``
 * ``main()`` prints ``"Welcome to the assistant bot!"``, then loops on
   ``input("Enter a command: ")``. Commands are case-insensitive:
@@ -51,7 +56,7 @@ from hw04.log import (
 )
 
 type Args = list[str]
-type Contacts = dict[str, str]
+type Contacts = dict[str, tuple[str, str]]
 
 
 COMMANDS: list[tuple[str, str]] = [
@@ -72,18 +77,18 @@ def parse_input(user_input: str) -> tuple[str, Args]:
     if not parts:
         return "", []
     cmd, *args = parts
-    return cmd.lower(), args
+    return cmd.casefold(), args
 
 
 def add_contact(args: Args, contacts: Contacts) -> str:
     if len(args) != 2:
         raise WrongArgumentsError("Give me name and phone please.")
     name, phone = args
-
-    if name in contacts:
+    normalized_name = name.casefold()
+    if normalized_name in contacts:
         raise NameExistsError("Contact already exists.")
 
-    contacts[name] = phone
+    contacts[normalized_name] = (name, phone)
     return "Contact added."
 
 
@@ -91,11 +96,13 @@ def change_contact(args: Args, contacts: Contacts) -> str:
     if len(args) != 2:
         raise WrongArgumentsError("Give me name and phone please.")
     name, phone = args
-
-    if name not in contacts:
+    normalized_name = name.casefold()
+    if normalized_name not in contacts:
         raise NotFoundError("Contact not found.")
 
-    contacts[name] = phone
+    original_name, _ = contacts[normalized_name]
+
+    contacts[normalized_name] = (original_name, phone)
     return "Contact updated."
 
 
@@ -104,16 +111,20 @@ def show_phone(args: Args, contacts: Contacts) -> str:
         raise WrongArgumentsError("Give me a name please.")
     (name,) = args
 
-    if name not in contacts:
+    normalized_name = name.casefold()
+
+    if normalized_name not in contacts:
         raise NotFoundError("Contact not found.")
 
-    return contacts[name]
+    return contacts[normalized_name][1]
 
 
 def show_all(contacts: Contacts) -> str:
     if not contacts:
         return "No contacts."
-    return "\n".join(f"{name}: {phone}" for name, phone in contacts.items())
+    return "\n".join(
+        f"{original_name}: {phone}" for original_name, phone in contacts.values()
+    )
 
 
 def show_help() -> str:

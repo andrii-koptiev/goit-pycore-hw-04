@@ -33,8 +33,8 @@ def parse_salary_from_line(line_number: int, line: str) -> float:
 
 def total_salary(path: str) -> tuple[float, float]:
     parsed_salary_list = [
-        parse_salary_from_line(line, line_number)
-        for line, line_number in read_data_lines(path)
+        parse_salary_from_line(line_number, line)
+        for line_number, line in read_data_lines(path)
     ]
 
     total = sum(parsed_salary_list)

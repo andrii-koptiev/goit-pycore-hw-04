@@ -1,11 +1,10 @@
 from typing import Callable
 
-from colorama import Fore, Style
-
-from hw04.log import log_error, log_goodbye
+from hw04.log import format_option, log_error, log_goodbye, log_prompt, log_title
 from hw04.task1_salary import run as salary_task_run
 from hw04.task2_cats import run as cats_task_run
 from hw04.task3_tree import run as tree_task_run
+from hw04.task4_bot import run as bot_task_run
 
 TASKS: dict[
     str,
@@ -14,20 +13,22 @@ TASKS: dict[
     "1": ("Salary", salary_task_run),
     "2": ("Cats", cats_task_run),
     "3": ("Folder Structure", tree_task_run),
+    "4": ("Contacts Bot", bot_task_run),
 }
 
 
 def print_menu() -> None:
-    print(f"\n{Style.BRIGHT}{Fore.CYAN}Choose a task:")
+    print()
+    log_title("Choose a task:")
     for key, (title, _) in TASKS.items():
-        print(f"  {Fore.YELLOW}{key}.{Style.RESET_ALL} {title}")
-    print(f"  {Fore.YELLOW}0.{Style.RESET_ALL} Exit")
+        print(format_option(f"{key}.", title, width=2))
+    print(format_option("0.", "Exit", width=2))
 
 
 def main() -> None:
     while True:
         print_menu()
-        choice = input(f"{Fore.YELLOW}Your choice: {Style.RESET_ALL}")
+        choice = log_prompt("Your choice: ")
 
         if choice == "0":
             log_goodbye()

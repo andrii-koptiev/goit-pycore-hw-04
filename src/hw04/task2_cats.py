@@ -31,7 +31,7 @@
 
 from typing import TypedDict
 
-from hw04.exceptions import CorruptLineError, DuplicateIdError, EmptyFileError
+from hw04.exceptions import CorruptLineError, DuplicateIdError, Hw04Error
 from hw04.files import read_data_lines
 from hw04.helpers import ask_path
 from hw04.log import log_error, log_result
@@ -79,12 +79,8 @@ def run() -> None:
         log_error(f"File not found: {path}")
     except (IsADirectoryError, PermissionError, UnicodeDecodeError) as e:
         log_error(f"Cannot read file: {e}")
-    except EmptyFileError as e:
-        log_error(f"File is empty: {e}")
-    except CorruptLineError as e:
-        log_error(f"File corrupted, {e}")
-    except DuplicateIdError as e:
-        log_error(f"File has duplicated id, {e}")
+    except Hw04Error as e:
+        log_error(str(e))
 
     else:
         log_result(f"Cats info: {cats}")
